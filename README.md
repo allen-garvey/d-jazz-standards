@@ -1,6 +1,6 @@
 # Jazz Standards
 
-Format and analyze jazz standards.
+Format and analyze jazz standards in .jazz notation.
 
 ## Dependencies
 
