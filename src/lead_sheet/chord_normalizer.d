@@ -132,13 +132,13 @@ void normalizeLeadSheetChords(string leadSheetRaw){
 	string cleanedLeadSheet = replaceAll(leadSheetRaw, regex(r"^!+.*|^\*\*+.*|^\s*$", "m"), "");
 	string[] lines = splitLines(cleanedLeadSheet);
 	//ignore empty lines
-	auto ignoredLinesRegex = regex(r"^\s*$");
+	auto emptyLinesRegex = regex(r"^\s*$");
 	auto chordRegex = regex(r"^\d[A-G]");
 	auto keyRegex = regex(r"^\*[A-Ga-g][-#]?:$");
 	auto alternateChordRegex = regex(r"\(.+\)$");
 	int keyBase = 0;
 	foreach(string line;lines){
-		if(!matchFirst(line, ignoredLinesRegex).empty){
+		if(!matchFirst(line, emptyLinesRegex).empty){
 			continue;
 		}
 		else if(!matchFirst(line, keyRegex).empty){
