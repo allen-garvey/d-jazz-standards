@@ -135,15 +135,28 @@ void normalizeLeadSheetChords(string leadSheetRaw){
 	auto emptyLinesRegex = regex(r"^\s*$");
 	auto chordRegex = regex(r"^\d[A-G]");
 	auto keyRegex = regex(r"^\*[A-Ga-g][-#]?:$");
+	auto majorKeyRegex = regex(r"[A-G]");
 	auto alternateChordRegex = regex(r"\(.+\)$");
 	int keyBase = 0;
 	foreach(string line;lines){
+		//blank lines
 		if(!matchFirst(line, emptyLinesRegex).empty){
 			continue;
 		}
+		//key signature
 		else if(!matchFirst(line, keyRegex).empty){
 			keyBase = chordToNoteNum(line);
+			//transpose key to C major or c minor
+			if(!matchFirst(line, majorKeyRegex).empty){
+				line = "*C:";
+			}
+			//minor
+			else{
+				line = "*c:";
+			}
+
 		}
+		//chord
 		else if(!matchFirst(line, chordRegex).empty){
 			//remove alternate chord(s)
 			line = replaceFirst(line, alternateChordRegex, "");
