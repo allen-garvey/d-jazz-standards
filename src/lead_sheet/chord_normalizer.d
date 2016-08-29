@@ -34,7 +34,7 @@ unittest{
 
 int chordToNoteNum(string chord)
 in{
-	auto inRegex = regex(r"^[\d*][A-Ga-g]");
+	auto inRegex = regex(r"^[\d*]?[A-Ga-g]");
 	assert(!matchFirst(chord, inRegex).empty);
 }
 out(result){
@@ -51,12 +51,13 @@ body{
 		'A' : 9,
 		'B' : 11
 	];
-	int chordNum = noteMap[toUpper(chord[1])];
-	if(chord.length >= 3){
-		if(chord[2] == '-'){
+	chord = replaceFirst(chord, regex(r"^[\d*]"), "");
+	int chordNum = noteMap[toUpper(chord[0])];
+	if(chord.length >= 2){
+		if(chord[1] == '-'){
 			chordNum--;
 		}
-		else if(chord[2] == '#'){
+		else if(chord[1] == '#'){
 			chordNum++;
 		}
 	}
@@ -77,13 +78,53 @@ body{
 	return notes[normalizeBase12(n)];
 }
 
-//TODO - fix slash chords
-string transposedChord(string originalChord, int newChordNum)
+string transposedChord(string originalChord, int keyBase)
+in{
+	assert(keyBase >= 0);
+	assert(keyBase < 12);
+}
 body{
+	if(keyBase == 0){
+		return originalChord;
+	}
+	int chordNum = chordToNoteNum(originalChord);
+	//transpose chord to C major
+	int normalizedChordNum = normalizeBase12(chordNum - keyBase);
 	//string transposedChord = to!string(originalChord[0]);
 	auto chordTypeRegex = regex(r"^\d[A-Ga-g][-#]?");
-	string transposedChord = to!string(originalChord[0]) ~ noteFromNum(newChordNum) ~ replaceFirst(originalChord, chordTypeRegex, "");
+	auto slashChordRegex = regex(r"/[A-Ga-g][-#]?$");
+	string transposedChord = to!string(originalChord[0]) ~ noteFromNum(normalizedChordNum) ~ replaceFirst(originalChord, chordTypeRegex, "");
+
+	//transpose root for slash chords
+	auto slashChordMatch = matchFirst(transposedChord, slashChordRegex);
+	if(!slashChordMatch.empty){
+		string slashChord = removechars(slashChordMatch.hit, "/");
+		string transposedSlashChord = transposeChord(slashChord, keyBase);
+		transposedChord = replaceFirst(transposedChord, slashChordRegex, "/" ~ transposedSlashChord);
+	}
+	
 	return transposedChord;
+}
+unittest{
+	assert(transposedChord("1D7b9/F#", 0) == "1D7b9/F#");
+	assert(transposedChord("1D7b9/F#", 7) == "1G7b9/B");
+	assert(transposedChord("2B/B-", 10) == "2D-/C");
+}
+
+//transposes bass note for slash chords
+string transposeChord(string originalChord, int keyBase)
+body{
+	if(keyBase == 0){
+		return originalChord;
+	}
+	int chordNum = chordToNoteNum(originalChord);
+	int normalizedChordNum = normalizeBase12(chordNum - keyBase);
+	return noteFromNum(normalizedChordNum);
+}
+unittest{
+	assert(transposeChord("C", 0) == "C");
+	assert(transposeChord("C", 2) == "B-");
+	assert(transposeChord("D", 3) == "B");
 }
 
 void normalizeLeadSheetChords(string leadSheetRaw){
@@ -93,7 +134,8 @@ void normalizeLeadSheetChords(string leadSheetRaw){
 	auto barlineRegex = regex(r"^=+");
 	auto chordRegex = regex(r"^\d[A-G]");
 	auto keyRegex = regex(r"^\*[A-Ga-g][-#]?:$");
-	int keyBase;
+	auto alternateChordRegex = regex(r"\(.+\)$");
+	int keyBase = 0;
 	foreach(string line;lines){
 		if(!matchFirst(line, barlineRegex).empty){
 			continue;
@@ -102,10 +144,9 @@ void normalizeLeadSheetChords(string leadSheetRaw){
 			keyBase = chordToNoteNum(line);
 		}
 		else if(!matchFirst(line, chordRegex).empty){
-			int chordNum = chordToNoteNum(line);
-			//transpose chord to C major
-			int normalizedChordNum = normalizeBase12(chordNum - keyBase);
-			line = transposedChord(line, normalizedChordNum);
+			//remove alternate chord(s)
+			line = replaceFirst(line, alternateChordRegex, "");
+			line = transposedChord(line, keyBase);
 		}
 		writeln(line);
 	}
