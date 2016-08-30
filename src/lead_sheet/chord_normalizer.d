@@ -77,6 +77,11 @@ body{
 	immutable string[12] notes = ["C", "D-", "D", "E-", "E", "F", "G-", "G", "A-", "A", "B-", "B"];
 	return notes[normalizeBase12(n)];
 }
+unittest{
+	assert(noteFromNum(0) == "C");
+	assert(noteFromNum(-1) == "B");
+	assert(noteFromNum(13) == "D-");
+}
 
 string transposedChord(string originalChord, int keyBase)
 in{
