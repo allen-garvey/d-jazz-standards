@@ -21,5 +21,5 @@ void main(){
 	//auto meterFormatRegex = regex(r"^\*M");
 	//analyzeSongsForCategory(meterRegex, meterFormatRegex);
 
-	normalizeLeadSheets();
+	normalizeLeadSheets(SongMode.Minor);
 }

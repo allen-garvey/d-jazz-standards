@@ -132,7 +132,9 @@ unittest{
 	assert(transposeChord("D", 3) == "B");
 }
 
-void normalizeLeadSheetChords(string leadSheetRaw){
+enum SongMode { All, Major, Minor }
+
+void normalizeLeadSheetChords(string leadSheetRaw, SongMode allowedSongMode){
 	//strip metadata and blank lines
 	string cleanedLeadSheet = replaceAll(leadSheetRaw, regex(r"^!+.*|^\*\*+.*|^\s*$", "m"), "");
 	string[] lines = splitLines(cleanedLeadSheet);
@@ -153,10 +155,16 @@ void normalizeLeadSheetChords(string leadSheetRaw){
 			keyBase = chordToNoteNum(line);
 			//transpose key to C major or c minor
 			if(!matchFirst(line, majorKeyRegex).empty){
+				if(allowedSongMode == SongMode.Minor){
+					return;
+				}
 				line = "*C:";
 			}
 			//minor
 			else{
+				if(allowedSongMode == SongMode.Major){
+					return;
+				}
 				line = "*c:";
 			}
 
@@ -173,8 +181,8 @@ void normalizeLeadSheetChords(string leadSheetRaw){
 	writeln("");
 }
 
-void normalizeLeadSheets(){
+void normalizeLeadSheets(SongMode allowedSongMode){
 	foreachLeadsheet(delegate void(string fileName, string fileContents){
-		normalizeLeadSheetChords(fileContents);
+		normalizeLeadSheetChords(fileContents, allowedSongMode);
 	});
 }
